@@ -150,5 +150,5 @@ struct BottomBar: View {
     ]
 
     BottomBar(text: $text, attachments: $attachments, isGenerating: false, onSubmit: { _ in }, onCancel: {})
-        .environment(AI())
+        .environment(AI(mockData: mockData))
 }
