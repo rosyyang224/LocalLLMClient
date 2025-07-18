@@ -31,7 +31,7 @@ struct GetTransactionsTool {
         var maxTransactionAmt: Double?
     }
 
-    let transactionsProvider: () -> [Transaction]
+    let transactionsProvider: @Sendable () -> [Transaction]
 
     func call(arguments: Arguments) async throws -> ToolOutput {
         print("[GetTransactionsTool] called with arguments:")

@@ -102,6 +102,7 @@ enum LLMModel: Sendable, CaseIterable, Identifiable {
 
 @Observable @MainActor
 final class AI {
+    let tools: [any LLMTool]
     var model = LLMModel.qwen3 {
         didSet {
             areToolsEnabled = model.supportsTools && areToolsEnabled
@@ -112,12 +113,10 @@ final class AI {
     var areToolsEnabled = false
 
     private var session: LLMSession?
-    private let tools: [any LLMTool] = [
-        WeatherTool(),
-        CalculatorTool(),
-        DateTimeTool(),
-        RandomNumberTool()
-    ]
+    init(mockData: String) {
+        let container = loadMockDataContainer(from: mockData) ?? MockDataContainer()
+        self.tools = makeLLMTools(container: container)
+    }
 
     var messages: [LLMInput.Message] {
         get { session?.messages ?? [] }
@@ -125,7 +124,7 @@ final class AI {
     }
     
     func resetMessages() {
-        messages = [.system("You are a helpful assistant who is responsible for helping the user with tasks using the provided tools.")]
+        messages = [.system("\(sysPrompt)")]
     }
 
     func loadLLM() async {

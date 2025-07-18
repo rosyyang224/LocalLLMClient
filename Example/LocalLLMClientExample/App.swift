@@ -5,7 +5,7 @@ struct ExampleApp: App {
     var body: some Scene {
         WindowGroup {
             RootView()
-                .environment(AI())
+                .environment(AI(mockData: mockData))
         }
     }
 }
@@ -49,5 +49,5 @@ struct RootView: View {
 
 #Preview {
     RootView()
-        .environment(AI())
+        .environment(AI(mockData: mockData))
 }

@@ -33,7 +33,7 @@ struct GetHoldingsTool {
         var max_marketvalueinbccy: Double?
     }
 
-    let holdingsProvider: () -> [Holding]
+    let holdingsProvider: @Sendable () -> [Holding]
 
     func call(arguments: Arguments) async throws -> ToolOutput {
         print("[GetHoldingsTool] called with arguments:")
