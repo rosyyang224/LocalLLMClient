@@ -114,7 +114,7 @@ struct ChatBubbleView: View {
 
 #Preview("Text") {
     @Previewable @State var ai: AI = {
-        let ai = AI()
+        let ai = AI(mockData: mockData)
         ai.setSession(.init(model: .mlx(id: ""), messages: [
             .user("Hello"),
             .assistant("Hi! How can I help you?"),
