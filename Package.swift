@@ -141,7 +141,7 @@ packageTargets.append(contentsOf: [
     ),
     .testTarget(
         name: "LocalLLMClientMLXTests",
-        dependencies: ["LocalLLMClientMLX", "LocalLLMClientTestUtilities"]
+        dependencies: ["LocalLLMClientMLX", "LocalLLMClientTestUtilities", "LocalLLMClient"]
     ),
     .target(
         name: "LocalLLMClientFoundationModels",
