@@ -22,8 +22,9 @@ public final actor FoundationModelsClient: LLMClient {
             let task = Task {
                 do {
                     var position: String.Index?
-                    let session = LanguageModelSession(model: model, transcript: input.makeTranscript(generationOptions: generationOptions))
-                    for try await text in session.streamResponse(to: input.makePrompt(), options: generationOptions) {
+                    let session = LanguageModelSession(model: model)
+                    let prompt = input.makePrompt()
+                    for try await text in session.streamResponse(to: prompt, options: generationOptions) {
                         continuation.yield(String(text[(position ?? text.startIndex)...]))
                         position = text.endIndex
                     }

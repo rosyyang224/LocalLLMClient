@@ -1,12 +1,14 @@
 import Foundation
+import LocalLLMClientCore
 import LocalLLMClient
 import LocalLLMClientMLX
 import LocalLLMClientLlama
+import LocalLLMClientFoundationModels
 #if canImport(UIKit)
 import UIKit
 #endif
 
-// TODO: Convert to struct
+// Add FoundationModels to the enum
 public enum LLMModel: Sendable, CaseIterable, Identifiable {
     case qwen3
     case qwen3_4b
@@ -16,6 +18,7 @@ public enum LLMModel: Sendable, CaseIterable, Identifiable {
     case gemma3
     case gemma3_4b
     case mobileVLM_3b
+    case foundationModels
 
     var name: String {
         switch self {
@@ -27,6 +30,7 @@ public enum LLMModel: Sendable, CaseIterable, Identifiable {
         case .gemma3: "llama.cpp / Gemma3 1B"
         case .gemma3_4b: "llama.cpp / Gemma3 4B"
         case .mobileVLM_3b: "llama.cpp / MobileVLM 3B"
+        case .foundationModels: "Apple Foundation Models"
         }
     }
 
@@ -40,12 +44,13 @@ public enum LLMModel: Sendable, CaseIterable, Identifiable {
         case .gemma3: "lmstudio-community/gemma-3-1B-it-qat-GGUF"
         case .gemma3_4b: "lmstudio-community/gemma-3-4B-it-qat-GGUF"
         case .mobileVLM_3b: "Blombert/MobileVLM-3B-GGUF"
+        case .foundationModels: "foundation-models"
         }
     }
 
     var filename: String? {
         switch self {
-        case .qwen3, .qwen3_4b, .qwen2_5VL_3b, .gemma3_4b_mlx: nil
+        case .qwen3, .qwen3_4b, .qwen2_5VL_3b, .gemma3_4b_mlx, .foundationModels: nil
         case .phi4mini: "Phi-4-mini-instruct-Q4_K_M.gguf"
         case .gemma3: "gemma-3-1B-it-QAT-Q4_0.gguf"
         case .gemma3_4b: "gemma-3-4B-it-QAT-Q4_0.gguf"
@@ -55,28 +60,28 @@ public enum LLMModel: Sendable, CaseIterable, Identifiable {
 
     var mmprojFilename: String? {
         switch self {
-        case .qwen3, .qwen3_4b, .qwen2_5VL_3b, .gemma3_4b_mlx, .phi4mini, .gemma3: nil
-#if os(macOS)
+        case .qwen3, .qwen3_4b, .qwen2_5VL_3b, .gemma3_4b_mlx, .phi4mini, .gemma3, .foundationModels: nil
+        #if os(macOS)
         case .gemma3_4b: "mmproj-model-f16.gguf"
-#elseif os(iOS)
+        #elseif os(iOS)
         case .gemma3_4b: nil
-#endif
+        #endif
         case .mobileVLM_3b: "mmproj-model-f16.gguf"
         }
     }
 
     var isMLX: Bool {
-        filename == nil
+        filename == nil && self != .foundationModels
     }
 
     var supportsVision: Bool {
         switch self {
-        case .qwen3, .qwen3_4b, .phi4mini, .gemma3: false
-#if os(macOS)
+        case .qwen3, .qwen3_4b, .phi4mini, .gemma3, .foundationModels: false
+        #if os(macOS)
         case .gemma3_4b: true
-#elseif os(iOS)
+        #elseif os(iOS)
         case .gemma3_4b: false
-#endif
+        #endif
         case .qwen2_5VL_3b, .gemma3_4b_mlx, .mobileVLM_3b: true
         }
     }
@@ -85,7 +90,7 @@ public enum LLMModel: Sendable, CaseIterable, Identifiable {
         switch self {
         case .gemma3_4b_mlx:
             return ["<end_of_turn>"]
-        case .qwen3, .qwen3_4b, .qwen2_5VL_3b, .phi4mini, .gemma3, .gemma3_4b, .mobileVLM_3b:
+        case .qwen3, .qwen3_4b, .qwen2_5VL_3b, .phi4mini, .gemma3, .gemma3_4b, .mobileVLM_3b, .foundationModels:
             return []
         }
     }
@@ -94,7 +99,7 @@ public enum LLMModel: Sendable, CaseIterable, Identifiable {
         switch self {
         case .qwen3, .qwen3_4b, .phi4mini, .gemma3, .gemma3_4b:
             return true
-        case .qwen2_5VL_3b, .gemma3_4b_mlx, .mobileVLM_3b:
+        case .qwen2_5VL_3b, .gemma3_4b_mlx, .mobileVLM_3b, .foundationModels:
             return false
         }
     }
@@ -127,6 +132,7 @@ final class AI {
         messages = [.system("\(sysPrompt)")]
     }
 
+    @available(macOS 26.0, *)
     func loadLLM() async {
         isLoading = true
         defer { isLoading = false }
@@ -135,6 +141,20 @@ final class AI {
         session = nil
 
         do {
+            if model == .foundationModels {
+                if #available(macOS 26.0, *) {
+                    session = LLMSession(
+                        model: .foundationModels(),
+                        tools: []
+                    )
+                } else {
+                    // Fallback on earlier versions
+                }
+                resetMessages()
+                return
+            }
+
+            // existing model loading logic (unchanged)
             let downloadModel: LLMSession.DownloadModel = if model.isMLX {
                 .mlx(id: model.id, parameter: .init(options: .init(extraEOSTokens: model.extraEOSTokens)))
             } else {
@@ -169,7 +189,11 @@ final class AI {
     func toggleTools() async {
         areToolsEnabled.toggle()
         if session != nil {
-            await loadLLM() // Reload session with/without tools
+            if #available(macOS 26.0, *) {
+                await loadLLM()
+            } else {
+                // Fallback on earlier versions
+            }
         }
     }
 }

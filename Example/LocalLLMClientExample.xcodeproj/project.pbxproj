@@ -10,6 +10,7 @@
 		06000A1F2DD2640900FE5313 /* LocalLLMClient in Frameworks */ = {isa = PBXBuildFile; productRef = 06000A1E2DD2640900FE5313 /* LocalLLMClient */; };
 		06000A212DD2640900FE5313 /* LocalLLMClientMLX in Frameworks */ = {isa = PBXBuildFile; productRef = 06000A202DD2640900FE5313 /* LocalLLMClientMLX */; };
 		06000A252DD2642D00FE5313 /* LocalLLMClientLlama in Frameworks */ = {isa = PBXBuildFile; productRef = 06000A242DD2642D00FE5313 /* LocalLLMClientLlama */; };
+		A39E14EF2E2D45AF0071D89D /* LocalLLMClientFoundationModels in Frameworks */ = {isa = PBXBuildFile; productRef = A39E14EE2E2D45AF0071D89D /* LocalLLMClientFoundationModels */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -30,6 +31,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A39E14EF2E2D45AF0071D89D /* LocalLLMClientFoundationModels in Frameworks */,
 				06000A1F2DD2640900FE5313 /* LocalLLMClient in Frameworks */,
 				06000A252DD2642D00FE5313 /* LocalLLMClientLlama in Frameworks */,
 				06000A212DD2640900FE5313 /* LocalLLMClientMLX in Frameworks */,
@@ -87,6 +89,7 @@
 				06000A1E2DD2640900FE5313 /* LocalLLMClient */,
 				06000A202DD2640900FE5313 /* LocalLLMClientMLX */,
 				06000A242DD2642D00FE5313 /* LocalLLMClientLlama */,
+				A39E14EE2E2D45AF0071D89D /* LocalLLMClientFoundationModels */,
 			);
 			productName = LocalLLMClientExample;
 			productReference = 060009E32DD25DC400FE5313 /* LocalLLMClientExample.app */;
@@ -386,6 +389,10 @@
 		06000A242DD2642D00FE5313 /* LocalLLMClientLlama */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = LocalLLMClientLlama;
+		};
+		A39E14EE2E2D45AF0071D89D /* LocalLLMClientFoundationModels */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = LocalLLMClientFoundationModels;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

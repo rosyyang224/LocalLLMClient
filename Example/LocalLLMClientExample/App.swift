@@ -40,7 +40,11 @@ struct RootView: View {
 #if !targetEnvironment(simulator)
         .onChange(of: ai.model, initial: true) { _, _ in
             Task {
-                await ai.loadLLM()
+                if #available(macOS 26.0, *) {
+                    await ai.loadLLM()
+                } else {
+                    // Fallback on earlier versions
+                }
             }
         }
 #endif
