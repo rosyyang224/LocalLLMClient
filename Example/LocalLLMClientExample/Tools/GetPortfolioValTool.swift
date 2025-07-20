@@ -9,6 +9,10 @@ import Foundation
 import LocalLLMClient
 import LocalLLMClientMacros
 
+private func effectiveFilter(_ value: String?) -> String? {
+    return (value == "all") ? nil : value
+}
+
 @Tool("get_portfolio_value")
 struct GetPortfolioValTool {
     let description = "Query your portfolio value snapshots. Filter by date range or index, or retrieve summary statistics like highest, lowest, and trend over time."
@@ -38,13 +42,13 @@ struct GetPortfolioValTool {
         print("[GetPortfolioValTool] total portfolio values: \(all.count)")
 
         let filtered = all.filter { pv in
-            if let idx = arguments.index, !pv.indices.contains(where: { $0.localizedCaseInsensitiveContains(idx) }) {
+            if let idx = effectiveFilter(arguments.index), !pv.indices.contains(where: { $0.localizedCaseInsensitiveContains(idx) }) {
                 return false
             }
-            if let start = arguments.startDate, pv.valueDate < start {
+            if let start = effectiveFilter(arguments.startDate), pv.valueDate < start {
                 return false
             }
-            if let end = arguments.endDate, pv.valueDate > end {
+            if let end = effectiveFilter(arguments.endDate), pv.valueDate > end {
                 return false
             }
             return true
@@ -70,6 +74,9 @@ struct GetPortfolioValTool {
                     .map { ["date": $0.valueDate, "marketValue": $0.marketValue] }
                 print("[GetPortfolioValTool] trend points count: \(points.count)")
                 return ToolOutput(data: ["type": "trend", "points": points])
+            case "latest":
+                print("[GetPortfolioValTool] 'latest' treated as raw data request")
+                break // Falls through to return raw filtered data
             default:
                 print("[GetPortfolioValTool] Unknown summary type: \(summary)")
                 break

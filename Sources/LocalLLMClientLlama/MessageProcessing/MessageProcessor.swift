@@ -30,10 +30,12 @@ public struct MessageProcessor: Sendable {
     ) throws(LLMError) {
         // Step 1: Transform messages
         let templateMessages = transformer.transform(messages)
+//        print("🔄 Transformed messages: \(templateMessages)")
         
         // Step 2: Extract special tokens
         let specialTokens = llamaDecoder.extractSpecialTokens(from: context.model)
         let templateContext = TemplateContext(specialTokens: specialTokens)
+        print("🔧 Special tokens: \(specialTokens)")
         
         // Step 3: Render template
         let prompt = try renderer.render(
@@ -42,6 +44,9 @@ public struct MessageProcessor: Sendable {
             context: templateContext,
             tools: tools
         )
+        
+//        print("📋 Final rendered prompt:")
+//        print(prompt)
         
         // Step 4: Extract chunks
         let imageChunks = extractImageChunks(from: templateMessages)

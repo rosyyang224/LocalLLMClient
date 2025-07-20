@@ -9,6 +9,10 @@ import Foundation
 import LocalLLMClient
 import LocalLLMClientMacros
 
+private func effectiveFilter(_ value: String?) -> String? {
+    return (value == "all") ? nil : value
+}
+
 @Tool("get_transactions")
 struct GetTransactionsTool {
     let description = "Retrieve and filter your transaction history by symbol (CUSIP), transaction type, account, date range, or amount."
@@ -47,13 +51,13 @@ struct GetTransactionsTool {
         print("[GetTransactionsTool] total transactions: \(all.count)")
 
         let filtered = all.filter { txn in
-            if let v = arguments.cusip, !txn.cusip.localizedCaseInsensitiveContains(v) { return false }
-            if let v = arguments.transactiontype, !txn.transactiontype.localizedCaseInsensitiveContains(v) { return false }
-            if let v = arguments.account, !txn.account.localizedCaseInsensitiveContains(v) { return false }
+            if let v = effectiveFilter(arguments.cusip), !txn.cusip.localizedCaseInsensitiveContains(v) { return false }
+            if let v = effectiveFilter(arguments.transactiontype), !txn.transactiontype.localizedCaseInsensitiveContains(v) { return false }
+            if let v = effectiveFilter(arguments.account), !txn.account.localizedCaseInsensitiveContains(v) { return false }
+            if let start = effectiveFilter(arguments.startDate), txn.transactiondate < start { return false }
+            if let end = effectiveFilter(arguments.endDate), txn.transactiondate > end { return false }
             if let minAmt = arguments.minTransactionAmt, txn.transactionamt < minAmt { return false }
             if let maxAmt = arguments.maxTransactionAmt, txn.transactionamt > maxAmt { return false }
-            if let start = arguments.startDate, txn.transactiondate < start { return false }
-            if let end = arguments.endDate, txn.transactiondate > end { return false }
             return true
         }
 

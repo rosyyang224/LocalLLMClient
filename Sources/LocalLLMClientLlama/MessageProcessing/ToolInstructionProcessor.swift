@@ -22,7 +22,12 @@ struct StandardToolInstructionProcessor: ToolInstructionProcessor {
     init() {}
 
     func hasNativeToolSupport(in template: String) -> Bool {
-        template.contains("tools")
+//        template.contains("tools")
+        let hasSupport = template.contains("tools")
+        print("🔧 ToolInstructionProcessor.hasNativeToolSupport")
+        print("🔧 Template contains 'tools': \(hasSupport)")
+//        print("🔧 Template sample: \(String(template.prefix(300)))...")
+        return hasSupport
     }
 
     func processMessages(
@@ -33,22 +38,31 @@ struct StandardToolInstructionProcessor: ToolInstructionProcessor {
         guard !tools.isEmpty else {
             return messages
         }
+        
+        print("🔧 Processing messages with \(tools.count) tools")
+        print("🔧 Template has native support: \(templateHasNativeSupport)")
+//        print("🔧 Original messages: \(messages)")
 
         var processedMessages = messages
         
         if templateHasNativeSupport {
             // For templates with native tool support, add tools field to system message
             processedMessages = injectToolsToSystemMessage(processedMessages, tools: tools)
+//            print("🔧 After injecting tools to system: \(processedMessages)")
         }
 
         // Only add tool instructions if the last message is not a tool message
         if !isLastMessageTool(processedMessages) {
             let toolInstructions = try generateToolInstructions(for: tools)
+            print("🔧 Generated tool instructions: \(toolInstructions)")
             processedMessages = injectToolInstructions(processedMessages, instructions: toolInstructions)
+//            print("🔧 After injecting instructions: \(processedMessages)")
         }
 
         // Convert tool messages to assistant messages if needed
         processedMessages = processToolMessages(processedMessages)
+//        print("🔧 Final processed messages: \(processedMessages)")
+
 
         return processedMessages
     }

@@ -144,14 +144,21 @@ public final class LlamaClient: LLMClient {
                     
                     for try await chunk in textStreamGenerator {
                         fullText += chunk
+                        print("📝 Raw chunk: '\(chunk)'")
                         
                         // Process the chunk through the tool call processor
                         if let processedText = processor.processChunk(chunk) {
+                            print("✅ Processed text: '\(processedText)'")
                             continuation.yield(.text(processedText))
+                        } else {
+                            print("❌ No processed text from chunk")
                         }
                     }
 
                     var toolCalls = processor.toolCalls + (LlamaToolCallParser.parseToolCalls(from: fullText, format: chatFormat) ?? [])
+                    print("🛠️ Tool calls from processor: \(processor.toolCalls)")
+                    print("🛠️ Tool calls from llama parser: \(LlamaToolCallParser.parseToolCalls(from: fullText, format: chatFormat) ?? [])")
+                    print("🛠️ Combined tool calls: \(toolCalls)")
                     toolCalls = toolCalls.reduce(into: []) { result, toolCall in
                         if !result.contains(where: { $0.name == toolCall.name }) {
                             result.append(toolCall)

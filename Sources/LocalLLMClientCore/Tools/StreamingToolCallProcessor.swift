@@ -49,9 +49,9 @@ package final class StreamingToolCallProcessor: Sendable {
     }
     
     private func processChunkInternal(_ chunk: String, state: inout ProcessorState) -> String? {
-        guard (state.state == .normal && chunk.contains("<")) || state.state != .normal else {
-            return chunk
-        }
+//        guard (state.state == .normal && chunk.contains("<")) || state.state != .normal else {
+//            return chunk
+//        }
         
         state.buffer += chunk
         var leadingText: String?

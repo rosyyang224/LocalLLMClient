@@ -9,6 +9,10 @@ import Foundation
 import LocalLLMClient
 import LocalLLMClientMacros
 
+private func effectiveFilter(_ value: String?) -> String? {
+    return (value == "all") ? nil : value
+}
+
 @Tool("get_holdings")
 struct GetHoldingsTool {
     let description = "Retrieve portfolio holdings, filterable by symbol, asset class, region, account type, profit/loss, or value."
@@ -50,10 +54,10 @@ struct GetHoldingsTool {
         print("[GetHoldingsTool] total holdings: \(all.count)")
 
         let filtered = all.filter { h in
-            if let v = arguments.symbol, !h.symbol.localizedCaseInsensitiveContains(v) { return false }
-            if let v = arguments.assetclass, !h.assetclass.localizedCaseInsensitiveContains(v) { return false }
-            if let v = arguments.countryregion, !h.countryregion.localizedCaseInsensitiveContains(v) { return false }
-            if let v = arguments.accounttype, !h.accounttype.localizedCaseInsensitiveContains(v) { return false }
+            if let v = effectiveFilter(arguments.symbol), !h.symbol.localizedCaseInsensitiveContains(v) { return false }
+            if let v = effectiveFilter(arguments.assetclass), !h.assetclass.localizedCaseInsensitiveContains(v) { return false }
+            if let v = effectiveFilter(arguments.countryregion), !h.countryregion.localizedCaseInsensitiveContains(v) { return false }
+            if let v = effectiveFilter(arguments.accounttype), !h.accounttype.localizedCaseInsensitiveContains(v) { return false }
             if let minPL = arguments.min_marketplinsccy, h.marketplinsccy < minPL { return false }
             if let maxPL = arguments.max_marketplinsccy, h.marketplinsccy > maxPL { return false }
             if let minVal = arguments.min_marketvalueinbccy, h.marketvalueinbccy < minVal { return false }

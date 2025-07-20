@@ -41,6 +41,9 @@ struct TemplateContext {
         context: TemplateContext,
         tools: [AnyLLMTool]
     ) throws(LLMError) -> String {
+        print("🎨 ChatTemplateRenderer.render called")
+        print("🎨 Received \(tools.count) tools: \(tools.map { $0.name })")
+//        print("🎨 Template preview: \(String(template.prefix(200)))...")
         let jinjaTemplate: Template
         do {
             jinjaTemplate = try Template(template)
@@ -50,14 +53,19 @@ struct TemplateContext {
         
         // Extract message data
         var messagesData = messages.map(\.value)
+        print("🎨 Original messages count: \(messagesData.count)")
+//        print("🎨 Original messages: \(messagesData)")
         
         // Process tool instructions if needed
         let hasNativeToolSupport = toolProcessor.hasNativeToolSupport(in: template)
+        print("🎨 Template has native tool support: \(hasNativeToolSupport)")
         messagesData = try toolProcessor.processMessages(
             messagesData,
             tools: tools,
             templateHasNativeSupport: hasNativeToolSupport
         )
+        print("🎨 After tool processing - messages count: \(messagesData.count)")
+        print("🎨 After tool processing - messages: \(messagesData)")
         
         // Build template context
         let templateContext = buildTemplateContext(
@@ -69,7 +77,12 @@ struct TemplateContext {
         
         // Render template
         do {
-            return try jinjaTemplate.render(templateContext)
+            let result = try jinjaTemplate.render(templateContext)
+            print("🎨 Rendered result length: \(result.count)")
+            print("🎨 Result contains '<tool_call>': \(result.contains("<tool_call>"))")
+            print("🎨 Result contains 'get_holdings': \(result.contains("get_holdings"))")
+            print("🎨 Result contains 'tool_call': \(result.contains("tool_call"))")
+            return result
         } catch {
             throw LLMError.invalidParameter(reason: "Failed to render template: \(error.localizedDescription)")
         }
