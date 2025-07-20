@@ -22,12 +22,9 @@ struct StandardToolInstructionProcessor: ToolInstructionProcessor {
     init() {}
 
     func hasNativeToolSupport(in template: String) -> Bool {
-//        template.contains("tools")
-        let hasSupport = template.contains("tools")
-        print("🔧 ToolInstructionProcessor.hasNativeToolSupport")
-        print("🔧 Template contains 'tools': \(hasSupport)")
-//        print("🔧 Template sample: \(String(template.prefix(300)))...")
-        return hasSupport
+        print(template)
+        return template.contains("tools") || template.contains("start_of_turn")
+
     }
 
     func processMessages(
@@ -76,7 +73,7 @@ struct StandardToolInstructionProcessor: ToolInstructionProcessor {
         }
 
         return """
-        If you decide to invoke any of the function(s), you MUST put it in the format of
+        If you decide to invoke any of the function(s), you MUST put it in a exact format. NEVER use backticks or markdown. Use XML tags only:
         <tool_call>
         {"name": function name, "arguments": dictionary of argument name and its value}
         </tool_call>\n

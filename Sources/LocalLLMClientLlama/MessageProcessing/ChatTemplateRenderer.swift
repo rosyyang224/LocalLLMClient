@@ -58,7 +58,6 @@ struct TemplateContext {
         
         // Process tool instructions if needed
         let hasNativeToolSupport = toolProcessor.hasNativeToolSupport(in: template)
-        print("🎨 Template has native tool support: \(hasNativeToolSupport)")
         messagesData = try toolProcessor.processMessages(
             messagesData,
             tools: tools,
