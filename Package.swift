@@ -125,7 +125,7 @@ packageTargets.append(contentsOf: [
     ),
     .testTarget(
         name: "LocalLLMClientLlamaTests",
-        dependencies: ["LocalLLMClientLlama", "LocalLLMClientTestUtilities"],
+        dependencies: ["LocalLLMClientLlama", "LocalLLMClientTestUtilities", "LocalLLMClient"],
         swiftSettings: [
             .interoperabilityMode(.Cxx)
         ]
@@ -214,7 +214,7 @@ packageTargets.append(contentsOf: [
     ),
     .testTarget(
         name: "LocalLLMClientLlamaTests",
-        dependencies: ["LocalLLMClientLlama", "LocalLLMClientTestUtilities"],
+        dependencies: ["LocalLLMClientLlama", "LocalLLMClientTestUtilities", "LocalLLMClient"],
         swiftSettings: [
             .interoperabilityMode(.Cxx)
         ],
