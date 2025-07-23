@@ -8,17 +8,8 @@ import LocalLLMClientFoundationModels
 import UIKit
 #endif
 
-// Add FoundationModels to the enum
 public enum LLMModel: Sendable, CaseIterable, Identifiable {
-    case qwen3
-    case qwen3_4b
-    case qwen2_5VL_3b
-    case gemma3_4b_mlx
-    case phi4mini
-    case gemma3
-    case gemma3_4b
-    case mobileVLM_3b
-    case foundationModels
+    case qwen3, qwen3_4b, qwen2_5VL_3b, gemma3_4b_mlx, phi4mini, gemma3, gemma3_4b, mobileVLM_3b, foundationModels
 
     var name: String {
         switch self {
@@ -33,7 +24,6 @@ public enum LLMModel: Sendable, CaseIterable, Identifiable {
         case .foundationModels: "Apple Foundation Models"
         }
     }
-
     public var id: String {
         switch self {
         case .qwen3: "mlx-community/Qwen3-1.7B-4bit"
@@ -47,7 +37,6 @@ public enum LLMModel: Sendable, CaseIterable, Identifiable {
         case .foundationModels: "foundation-models"
         }
     }
-
     var filename: String? {
         switch self {
         case .qwen3, .qwen3_4b, .qwen2_5VL_3b, .gemma3_4b_mlx, .foundationModels: nil
@@ -57,7 +46,6 @@ public enum LLMModel: Sendable, CaseIterable, Identifiable {
         case .mobileVLM_3b: "ggml-MobileVLM-3B-q5_k_s.gguf"
         }
     }
-
     var mmprojFilename: String? {
         switch self {
         case .qwen3, .qwen3_4b, .qwen2_5VL_3b, .gemma3_4b_mlx, .phi4mini, .gemma3, .foundationModels: nil
@@ -69,11 +57,6 @@ public enum LLMModel: Sendable, CaseIterable, Identifiable {
         case .mobileVLM_3b: "mmproj-model-f16.gguf"
         }
     }
-
-    var isMLX: Bool {
-        filename == nil && self != .foundationModels
-    }
-
     var supportsVision: Bool {
         switch self {
         case .qwen3, .qwen3_4b, .phi4mini, .gemma3, .foundationModels: false
@@ -85,22 +68,16 @@ public enum LLMModel: Sendable, CaseIterable, Identifiable {
         case .qwen2_5VL_3b, .gemma3_4b_mlx, .mobileVLM_3b: true
         }
     }
-
     var extraEOSTokens: Set<String> {
         switch self {
-        case .gemma3_4b_mlx:
-            return ["<end_of_turn>"]
-        case .qwen3, .qwen3_4b, .qwen2_5VL_3b, .phi4mini, .gemma3, .gemma3_4b, .mobileVLM_3b, .foundationModels:
-            return []
+        case .gemma3_4b_mlx: return ["<end_of_turn>"]
+        default: return []
         }
     }
-    
     var supportsTools: Bool {
         switch self {
-        case .qwen3, .qwen3_4b, .phi4mini, .gemma3, .gemma3_4b:
-            return true
-        case .qwen2_5VL_3b, .gemma3_4b_mlx, .mobileVLM_3b, .foundationModels:
-            return false
+        case .qwen3, .qwen3_4b, .phi4mini, .gemma3, .gemma3_4b, .foundationModels: true
+        case .qwen2_5VL_3b, .gemma3_4b_mlx, .mobileVLM_3b: false
         }
     }
 }
@@ -116,8 +93,8 @@ final class AI {
     private(set) var isLoading = false
     private(set) var downloadProgress: Double = 0
     var areToolsEnabled = false
-
     private var session: LLMSession?
+
     init(mockData: String) {
         let container = loadMockDataContainer(from: mockData) ?? MockDataContainer()
         self.tools = makeLLMTools(container: container)
@@ -127,51 +104,51 @@ final class AI {
         get { session?.messages ?? [] }
         set { session?.messages = newValue }
     }
-    
+
     func resetMessages() {
         messages = [.system("\(sysPrompt)")]
     }
 
-    @available(macOS 26.0, *)
+    // MARK: - Model selection and session creation
+
+    private func createSessionModel() -> any LLMSession.Model {
+        switch model {
+        case .foundationModels:
+            if #available(macOS 26.0, iOS 26.0, *) {
+                return FoundationSessionModel()
+            } else {
+                fatalError("FoundationModels only available on macOS 15/iOS 18+")
+            }
+        case .qwen3, .qwen3_4b, .qwen2_5VL_3b, .gemma3_4b_mlx:
+            return LLMSession.DownloadModel.mlx(
+                id: model.id,
+                parameter: .init(options: .init(extraEOSTokens: model.extraEOSTokens))
+            )
+        case .phi4mini, .gemma3, .gemma3_4b, .mobileVLM_3b:
+            return LLMSession.DownloadModel.llama(
+                id: model.id,
+                model: model.filename!,
+                mmproj: model.mmprojFilename,
+                parameter: .init(context: 10240, options: .init(extraEOSTokens: model.extraEOSTokens, verbose: true))
+            )
+        }
+    }
+
     func loadLLM() async {
         isLoading = true
         defer { isLoading = false }
-
-        // Release memory first if a previous model was loaded
         session = nil
-
         do {
-            if model == .foundationModels {
-                if #available(macOS 26.0, *) {
-                    session = LLMSession(
-                        model: .foundationModels(),
-                        tools: []
-                    )
-                } else {
-                    // Fallback on earlier versions
+            let sessionModel = createSessionModel()
+            let toolsToUse: [any LLMTool] = areToolsEnabled ? tools : []
+            // Download progress for models that support it
+            if let downloadModel = sessionModel as? LLMSession.DownloadModel {
+                try await downloadModel.downloadModel { @MainActor [weak self] progress in
+                    self?.downloadProgress = progress
+                    print("Download progress: \(progress)")
                 }
-                resetMessages()
-                return
             }
-
-            // existing model loading logic (unchanged)
-            let downloadModel: LLMSession.DownloadModel = if model.isMLX {
-                .mlx(id: model.id, parameter: .init(options: .init(extraEOSTokens: model.extraEOSTokens)))
-            } else {
-                .llama(
-                    id: model.id,
-                    model: model.filename!,
-                    mmproj: model.mmprojFilename,
-                    parameter: .init(context: 10240, options: .init(extraEOSTokens: model.extraEOSTokens, verbose: true))
-                )
-            }
-
-            try await downloadModel.downloadModel { @MainActor [weak self] progress in
-                self?.downloadProgress = progress
-                print("Download progress: \(progress)")
-            }
-
-            session = LLMSession(model: downloadModel, tools: areToolsEnabled ? tools : [])
+            session = LLMSession(model: sessionModel, tools: toolsToUse)
             resetMessages()
         } catch {
             print("Failed to load LLM: \(error)")
@@ -182,20 +159,31 @@ final class AI {
         guard let session else {
             throw LLMError.failedToLoad(reason: "LLM not loaded")
         }
-
         return session.streamResponse(to: message, attachments: attachments)
     }
-    
+
     func toggleTools() async {
         areToolsEnabled.toggle()
         if session != nil {
-            if #available(macOS 26.0, *) {
-                await loadLLM()
-            } else {
-                // Fallback on earlier versions
-            }
+            await loadLLM()
         }
     }
+}
+
+// MARK: - Foundation Models Support
+
+@available(macOS 26.0, iOS 26.0, *)
+private struct FoundationSessionModel: LLMSession.Model {
+    func prewarm() async throws {}
+    let makeClient: @Sendable ([AnyLLMTool]) async throws -> AnyLLMClient =
+        { (tools: [AnyLLMTool]) async throws -> AnyLLMClient in
+            let asAnyLLMTools: [any LLMTool] = tools.map { $0.underlyingTool }
+            FoundationModelsClient(
+                model: .default,
+                generationOptions: .init(),
+                tools: asAnyLLMTools 
+            )
+        }
 }
 
 #if DEBUG

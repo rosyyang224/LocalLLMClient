@@ -53,7 +53,7 @@ Cross-data Examples:
 - "Which asset class performed best this year?": Call `get_holdings`, group by assetclass, compare total marketplinsccy.
 - "Did my holdings increase in value after March?": Call `get_portfolio_value` for before and after March, then compare market values.
 - "How much did I invest in equities last month?": Call `get_transactions` with transactiontype=BUY and date filter; cross-reference with `get_holdings` to identify equity CUSIPs.
-- "What was my realized profit from sales in Q2?": Call `get_transactions` with transactiontype=SELL and Q2 dates; estimate gain/loss.
+- "What was my realized profit from sales in Q2?": Call `get_transactions` with transactiontype=SELL and Q2 dates;wiat estimate gain/loss.
 - "Summarize performance by account": Call `get_holdings`, then group by accounttype and sum market value and profit/loss.
 - "Break down my international vs US investments": Call `get_holdings`, separate holdings by countryregion == "United States" vs others.
 - "How diversified is my portfolio?": Call `get_holdings`, count distinct symbols, asset classes, and regions.
@@ -61,6 +61,6 @@ Cross-data Examples:
 - "Summarize my portfolio": Call all 3 tools. Call `get_holdings` to summarize current positions, market value, and profit/loss by asset class and region. Call `get_portfolio_value` to analyze performance trends over time. Call `get_transactions` to include recent buys, sells, or cash flows. Combine all into a single high-level report.
 
 Never guess or hallucinate. Always call one or more of the above tools to fetch data, then use the results to answer the user's question.
-                                                                                                        
+                                                                                                    
 \(createSystemPrompt())
 """

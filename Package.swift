@@ -149,7 +149,7 @@ packageTargets.append(contentsOf: [
     ),
     .testTarget(
         name: "LocalLLMClientFoundationModelsTests",
-        dependencies: ["LocalLLMClientFoundationModels", "LocalLLMClientTestUtilities"]
+        dependencies: ["LocalLLMClientFoundationModels", "LocalLLMClientTestUtilities", "LocalLLMClient"]
     ),
 
     .binaryTarget(

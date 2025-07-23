@@ -1,6 +1,8 @@
 #if canImport(FoundationModels)
-import LocalLLMClientCore
+import Foundation
 import FoundationModels
+import LocalLLMClient
+import LocalLLMClientCore
 
 @available(iOS 26.0, macOS 26.0, *)
 @available(tvOS, unavailable)
@@ -8,129 +10,76 @@ import FoundationModels
 public final actor FoundationModelsClient: LLMClient {
     let model: SystemLanguageModel
     let generationOptions: GenerationOptions
+    let tools: [any Tool]
 
-    init(
+    public init(
         model: SystemLanguageModel,
         generationOptions: GenerationOptions,
+        tools: [any Tool] = []
     ) {
         self.model = model
         self.generationOptions = generationOptions
+        self.tools = tools
     }
 
+    // MARK: - Core text output
+    public func text(from input: LLMInput) async throws -> String {
+        let session = try await LanguageModelSession(
+            model: model,
+            tools: tools,
+            instructions: input.makePromptString()
+        )
+        let result = try await session.respond(to: input.makePromptString())
+        return result.content
+    }
+
+    // MARK: - Streaming text output (no native streaming; yield all at once)
     public func textStream(from input: LLMInput) async throws -> AsyncStream<String> {
-        return .init { continuation in
-            let task = Task {
-                do {
-                    var position: String.Index?
-                    let session = LanguageModelSession(model: model)
-                    let prompt = input.makePrompt()
-                    for try await text in session.streamResponse(to: prompt, options: generationOptions) {
-                        continuation.yield(String(text[(position ?? text.startIndex)...]))
-                        position = text.endIndex
-                    }
-                } catch {
-                }
-                continuation.finish()
-            }
-            continuation.onTermination = { _ in
-                task.cancel()
-            }
+        let response = try await text(from: input)
+        return AsyncStream { continuation in
+            continuation.yield(response)
+            continuation.finish()
         }
     }
+
+    // MARK: - Response stream (just chunkless fallback)
+    public func responseStream(from input: LLMInput) async throws -> AsyncThrowingStream<StreamingChunk, Error> {
+        let response = try await text(from: input)
+        return AsyncThrowingStream { continuation in
+            continuation.yield(.text(response))
+            continuation.finish()
+        }
+    }
+
+    // MARK: - Tool calling
+    public func generateToolCalls(from input: LLMInput) async throws -> LocalLLMClientCore.GeneratedContent {
+        throw LLMError.invalidParameter(reason: "Tool calls are not supported by FoundationModelsClient in this SDK version")
+    }
+
+    public func resume(
+        withToolCalls toolCalls: [LLMToolCall],
+        toolOutputs: [(String, String)],
+        originalInput: LLMInput
+    ) async throws -> String {
+        throw LLMError.invalidParameter(reason: "Tool calls are not supported by FoundationModelsClient in this SDK version")
+    }
 }
+
+// MARK: - LLMInput Extensions for Prompt
 
 @available(iOS 26.0, macOS 26.0, *)
 @available(tvOS, unavailable)
 @available(watchOS, unavailable)
 extension LLMInput {
-    func makePrompt() -> Prompt {
-        Prompt {
-            switch value {
-            case let .plain(text):
-                text
-            case let .chatTemplate(messages):
-                messages.last?.value["content"] as? String ?? ""
-            case let .chat(messages):
-                messages.last?.content ?? ""
-            }
-        }
-    }
-    
-    func makeTranscript(generationOptions: GenerationOptions) -> Transcript {
-        .init(entries: makeEntriesWithoutLatest(generationOptions: generationOptions))
-    }
-    
-    private func makeEntriesWithoutLatest(generationOptions: GenerationOptions) -> [Transcript.Entry] {
+    func makePromptString() -> String {
         switch value {
-        case .plain:
-            []
+        case let .plain(text):
+            return text
         case let .chatTemplate(messages):
-            messages.dropLast().compactMap {
-                let content = $0.value["content"] as? String ?? ""
-//                let images = $0.attachments.images // not supported yet
-                switch $0.value["role"] as? String {
-                case "system"?:
-                    return Transcript.Entry.instructions(.init(
-                        segments: [.text(.init(content: content))],
-                        toolDefinitions: []
-                    ))
-                case "user"?:
-                    return Transcript.Entry.prompt(.init(
-                        segments: [.text(.init(content: content))],
-                        options: generationOptions
-                    ))
-                case "assistant"?:
-                    return Transcript.Entry.response(.init(
-                        assetIDs: [], segments: [.text(.init(content: content))]
-                    ))
-                case "tool"?:
-                    return Transcript.Entry.prompt(.init(
-                        segments: [.text(.init(content: content))],
-                        options: generationOptions
-                    ))
-                default:
-                    return nil
-                }
-            }
+            return messages.last?.value["content"] as? String ?? ""
         case let .chat(messages):
-            messages.dropLast().compactMap {
-                let content = $0.content
-                switch $0.role {
-                case .system:
-                    return Transcript.Entry.instructions(.init(
-                        segments: [.text(.init(content: content))],
-                        toolDefinitions: []
-                    ))
-                case .user, .custom:
-                    return Transcript.Entry.prompt(.init(
-                        segments: [.text(.init(content: content))],
-                        options: generationOptions
-                    ))
-                case .assistant:
-                    return Transcript.Entry.response(.init(
-                        assetIDs: [], segments: [.text(.init(content: content))]
-                    ))
-                case .tool:
-                    return Transcript.Entry.prompt(.init(
-                        segments: [.text(.init(content: content))],
-                        options: generationOptions
-                    ))
-                }
-            }
+            return messages.last?.content ?? ""
         }
     }
 }
-
-@available(iOS 26.0, macOS 26.0, *)
-@available(tvOS, unavailable)
-@available(watchOS, unavailable)
-public extension LocalLLMClient {
-    static func foundationModels(
-        model: SystemLanguageModel = .default,
-        parameter: GenerationOptions = .init()
-    ) async throws -> FoundationModelsClient {
-        FoundationModelsClient(model: model, generationOptions: parameter)
-    }
-}
-
 #endif
